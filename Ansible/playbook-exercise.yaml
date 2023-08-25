@@ -1,0 +1,54 @@
+#
+#Use the debug module to show the information from the 
+#   "Copy nginx file over" task
+#Get the playbook to fail on the "Copy nginx file over" 
+# task if the path before and after are the same
+#Get the playbook to only run "Copy nginx file over" 
+#   task if the path before and after are the same (this won't work, why?)
+#Make the "install nginx" task fail if the update cache time is
+#    bigger than 1.
+
+
+
+- hosts: localhost
+  connection: local
+  become: true
+  tasks:
+  - name: install nginx
+    apt:
+      name: nginx
+      state: present
+      update_cache: true
+      cache_valid_time: 300
+    register: installnginx
+#    failed_when: installnginx.cache_update_time > 1  # It's always going to be > 0
+
+  - debug:
+      var: installnginx
+      verbosity: 1
+
+  - name: Copy nginx file over
+    copy:
+      src: nginx.conf
+      dest: /etc/nginx/nginx.conf
+    register: nginx_config
+#    failed_when: nginx_config.diff.after.path == nginx_config.diff.before.path  # failed_when succeded
+  - name: Print the contents of the nginx_config
+    debug:
+      var: nginx_config
+      verbosity: 1
+
+  - name: Restart nginx if needed
+    service:
+      name: nginx
+      state: restarted
+    when: nginx_config.changed == true
+  - name: Check that you can connect (GET) to a page and it returns a status 200    
+    ansible.builtin.uri:
+      url: http://localhost
+      return_content: True
+    register: webcontent
+  - debug:
+      var: webcontent.content
+
+  

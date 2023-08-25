@@ -1,0 +1,29 @@
+#Write a playbook that uninstalls nginx, you can test this by
+#     running curl localhost and you should get a connection error.
+#Once nginx is uninstalled, run the install playbook again and
+#    run curl localhost. Did this work? If not, how can we make 
+#    our install playbook better?
+
+
+- name: The Uninstall Playbook
+  hosts: localhost
+  become: true
+  tasks:
+  - name: stop nginx
+    systemd:
+      name: nginx
+      state: stopped
+      
+  - name: uninstall nginx
+    apt:
+      name: nginx
+      state: absent
+  - name: remove the config file
+    file:
+      path: /etc/nginx/nginx.conf
+      state: absent
+  
+  - name: Check that you can connect (GET) to a page and it returns a status 200    
+    ansible.builtin.uri:
+      url: http://localhost
+    ignore_errors: true
